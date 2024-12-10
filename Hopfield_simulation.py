@@ -104,7 +104,7 @@ dt= 0.01
 x = np.linspace(-5, 5, 150)
 y = np.linspace(-5, 5, 150)
 
-output_dir = "Asquare_Hopfield"
+output_dir = "Hopfield"
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step)
