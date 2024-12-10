@@ -1,4 +1,4 @@
-syms x y u v a b c d e f h k l o p q r s w gamma eta nu omega g m_th n_th;
+syms x y u v a b c d e f h k l o p q r s w gamma eta nu omega g m_th n_th Dia;
 P(x,y,u,v) =  exp(a + b * x + c * y + d * u + e * v + f * x^2 + h * y^2 + k * u^2 + l * v^2 + o * x * y + p * u * v + q * x * u + r * y * u + s * x * v + w * y * v);
 
 function fx = fst_deriv(func,var)
@@ -26,7 +26,7 @@ function fxy = exp_diff_deriv(func,var1,var2)
 end
 
 %   Calculate 1st and 2nd derivatives
-function [Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxv,Pyu] = fst_snd_derivs(P,x,y,u,v)
+function [Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxv,Pyu,Pxy] = fst_snd_derivs(P,x,y,u,v)
     Px = exp_fst_deriv(P,x);
     Py = exp_fst_deriv(P,y);
     Pu = exp_fst_deriv(P,u);
@@ -39,6 +39,7 @@ function [Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxv,Pyu] = fst_snd_derivs(P,x,y,u,v)
 
     Pxv = exp_diff_deriv(P,x,v);
     Pyu = exp_diff_deriv(P,y,u);
+    Pxy = exp_diff_deriv(P,x,y);
 end
 
 %   Extract each components in the time derivative
@@ -71,12 +72,12 @@ function [PT_const, PTx, PTy, PTu, PTv, PTxx, PTyy, PTuu, PTvv, PTxy, PTuv, PTxu
 end
 
 %   Calculate the time-derivative of P of the system
-[Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxv,Pyu] = fst_snd_derivs(P,x,y,u,v);
+[Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxv,Pyu,Pxy] = fst_snd_derivs(P,x,y,u,v);
 
-PT1 = (gamma + eta) + (gamma/2 * x - nu * y) * Px + (gamma/2 * y + nu * x + 2 * g * u) * Py;
-PT2 = (eta/2 * u - nu * v) * Pu + (eta/2 * v + nu * u + 2 * g * x) * Pv;
+PT1 = (gamma + eta) + (gamma/2 * x - nu * y) * Px + (gamma/2 * y + (nu + 4 * Dia) * x + 2 * g * u) * Py;
+PT2 = (eta/2 * u - (nu + 2 * Dia) * v) * Pu + (eta/2 * v + (nu + 2 * Dia) * u + 2 * g * x) * Pv;
 PT3 = gamma * n_th / 4 * (Pxx + Pyy) + eta * m_th / 4 * (Puu + Pvv);
-PT4 = - g * Pxv / 2 - g * Pyu / 2;
+PT4 = - g * Pxv / 2 - g * Pyu / 2 - Dia * Pxy;
 
 PT = simplify(PT1 + PT2 + PT3 + PT4);
 

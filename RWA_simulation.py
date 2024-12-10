@@ -103,7 +103,7 @@ dt= 0.001
 x = np.linspace(-5, 5, 150)
 y = np.linspace(-5, 5, 150)
 
-output_dir = "fokker-planck-sim-result"
+output_dir = "RWA"
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step)

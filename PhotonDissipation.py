@@ -46,7 +46,8 @@ y0 = 2
 
 phys_parameter = gamma, nu, n_th
 
-a0 = - (x0 * x0 + y0 * y0)/eps2   # Initial condition for a
+Dim = 2
+a0 = - (x0 * x0 + y0 * y0)/eps2  - Dim * np.log( np.sqrt(np.pi * eps2)) # Initial condition for a
 b0 = 2 * x0 /eps2  # Initial condition for b
 c0 = 2 * y0 /eps2  # Initial condition for c
 d0 = - 1/eps2  # Initial condition for d
@@ -61,7 +62,7 @@ dt= 0.01
 x = np.linspace(-10, 10, 100)
 y = np.linspace(-10, 10, 100)
 
-output_dir = "fokker-planck-sim-result"
+output_dir = "PhotonDissipation"
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step)
