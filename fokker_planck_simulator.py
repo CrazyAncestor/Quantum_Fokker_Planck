@@ -123,7 +123,7 @@ class FokkerPlanckSimulator:
     def save_snapshot(self, t, ProbDens):
         # Create a plot for the Probability Distribution
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
-        im = ax.imshow(ProbDens.T, extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower', aspect='auto', cmap='hot', vmin=self.vmin, vmax=self.vmax)
+        im = ax.imshow(ProbDens.T, extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower', aspect='auto', cmap='hot')#, vmin=self.vmin, vmax=self.vmax)
         ax.set_title(f"Probability Distribution on Coherent State Plane at Time = {t * self.dt:.2f}")
         ax.set_xlabel(r'Re{$\alpha$} (x)')
         ax.set_ylabel(r'Im{$\alpha$} (y)')
@@ -167,12 +167,21 @@ class FokkerPlanckSimulator:
             print("Error: Length of time and centroid_x do not match.")
 
     def plot_parameter_evolution(self):
-        if len(self.solution[0])==4:
+        if len(self.solution[0])==4 or len(self.solution[0])==6:
             # Plot the evolution of b(t), c(t), d(t) versus time in subplots
             plt.figure(figsize=(10, 8))
 
             # Subplot for b(t)
             plt.subplot(2, 2, 1)
+            plt.plot(self.t_vals, self.solution[:, 0], label="a(t)", color='g')
+            plt.xlabel("Time (t)")
+            plt.ylabel("a(t)")
+            plt.title("Evolution of a(t) over Time")
+            plt.legend()
+            plt.grid(True)
+
+            # Subplot for b(t)
+            plt.subplot(2, 2, 2)
             plt.plot(self.t_vals, self.solution[:, 1], label="b(t)", color='g')
             plt.xlabel("Time (t)")
             plt.ylabel("b(t)")
@@ -181,7 +190,7 @@ class FokkerPlanckSimulator:
             plt.grid(True)
 
             # Subplot for c(t)
-            plt.subplot(2, 2, 2)
+            plt.subplot(2, 2, 3)
             plt.plot(self.t_vals, self.solution[:, 2], label="c(t)", color='r')
             plt.xlabel("Time (t)")
             plt.ylabel("c(t)")
@@ -190,7 +199,7 @@ class FokkerPlanckSimulator:
             plt.grid(True)
 
             # Subplot for d(t)
-            plt.subplot(2, 2, 3)
+            plt.subplot(2, 2, 4)
             plt.plot(self.t_vals, self.solution[:, 3], label="d(t)", color='c')
             plt.xlabel("Time (t)")
             plt.ylabel("d(t)")
@@ -205,7 +214,7 @@ class FokkerPlanckSimulator:
             plt.savefig(f'{self.output_dir}/Parameter_bcd_evolution.png')
             plt.close()
 
-        elif len(self.solution[0])==15:
+        elif len(self.solution[0])==15 or len(self.solution[0])==12:
             # Plot the evolution of b(t), c(t), d(t), e(t) versus time in subplots
             plt.figure(figsize=(10, 8))
 
