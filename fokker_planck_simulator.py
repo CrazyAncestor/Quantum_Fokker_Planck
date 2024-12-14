@@ -2,9 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from tqdm import tqdm
+import cmath
 
 class FokkerPlanckSimulator:
-    def __init__(self, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, solver):
+    def __init__(self, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, solver, analytical=None):
         # Simulation time settings
         self.t_start = t_start
         self.t_end = t_end
@@ -26,6 +27,7 @@ class FokkerPlanckSimulator:
         # Functions for simulation
         self.ProbDensMap = ProbDensMap
         self.solver = solver
+        self.analytical = analytical
 
         # Prepare output directory
         self.output_dir = str('bin/')+output_dir
@@ -35,8 +37,7 @@ class FokkerPlanckSimulator:
         self.centroid_x = []
         self.centroid_y = []
 
-
-    def run_simulation(self, pure_parameter = False):
+    def run_simulation(self, pure_parameter = False, compare_analytical = False):
 
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -55,6 +56,8 @@ class FokkerPlanckSimulator:
             else:
                 # Precompute min and max values for consistent color scaling in plots
                 os.makedirs(self.output_dir+str('/Snapshots'), exist_ok=True)
+                if compare_analytical:
+                    os.makedirs(self.output_dir+str('/AnalyticalSolution_Snapshots'), exist_ok=True)
                 self.u_init = self.ProbDensMap(self.x, self.y, self.init_cond)
                 self.vmin, self.vmax = np.min(self.u_init), np.max(self.u_init)
 
@@ -66,6 +69,10 @@ class FokkerPlanckSimulator:
 
                     # Compute the Probability Distribution at the current time step
                     ProbDens = self.ProbDensMap(self.x, self.y, self.solution[t])
+                    if compare_analytical:
+                        AnaDens = self.analytical(self.x, self.y, (t)*self.dt, self.phys_parameter)
+                        err = self.rms_error(AnaDens, ProbDens)
+                        log_file.write(f"Comparison with analytical solution={err}.\n")
 
                     # Calculate the center of the probability distribution
                     weighted_sum_x = np.sum(self.x[:, None] * ProbDens)  # Sum over x for each y
@@ -89,8 +96,10 @@ class FokkerPlanckSimulator:
 
                     # Save a snapshot every 10 steps
                     if t % 10 == 0:
-                        self.save_snapshot(t, ProbDens)
+                        self.save_snapshot(t, ProbDens,f'{self.output_dir}/Snapshots/snapshot_{t:04d}.png')
                         log_file.write(f"Snapshot saved for time step {t}.\n")
+                        if compare_analytical:
+                            self.save_snapshot(t, AnaDens,f'{self.output_dir}/AnalyticalSolution_Snapshots/snapshot_{t:04d}.png')
 
                 # Plot the path of the center of the distribution at the end of the simulation
                 self.plot_center_path()
@@ -103,11 +112,70 @@ class FokkerPlanckSimulator:
             log_file.write(f"Simulation ended at {self.t_end}.\n")
             log_file.write("Simulation completed successfully.\n")
 
+    def expectation_value(self, Exp_Func, t, realornot):
+        X, Y = np.meshgrid(self.x, self.y)
+        Alpha = X + 1j * Y
+        Alpha_star = X - 1j * Y  
+        t_idx = int(t/self.dt)
+        if t_idx<0:
+            t_idx = 0
+        elif t_idx>=len(self.solution):
+            t_idx = len(self.solution) - 1
+        
+        ProbDens = self.ProbDensMap(self.x, self.y, self.solution[t_idx]) 
+
+        if realornot:
+            return self.volume_integration(self.x, self.y, ProbDens * Exp_Func(Alpha, Alpha_star)).real
+        else:
+            return self.volume_integration(self.x, self.y, ProbDens * Exp_Func(Alpha, Alpha_star))
+        
+    def electric_field_evolution(self):
+        def EF(alpha,alpha_star):
+            return (alpha + alpha_star)/2.
+        def EF2(alpha,alpha_star):
+            return (alpha**2 + alpha_star**2 + 2 * alpha * alpha_star + 1)/4.
+        
+        t = []
+        EFs = []
+        deltaEFs = []
+        for i in range(len(self.solution)):
+            t.append(i * self.dt)
+
+            ef = self.expectation_value(EF,t[i],realornot=True)
+            ef2 = self.expectation_value(EF2,t[i],realornot=True)
+
+            EFs.append(ef)
+            deltaEFs.append((ef2 - ef**2)**0.5)
+
+        # 創建圖形
+        plt.figure(figsize=(8, 6))
+
+        # 繪製期望值 (EFs)
+        plt.plot(t, EFs, label='Electric Field', color='b', marker='o', linestyle='-', markersize=6)
+
+        # 繪製期望值的誤差條 (標準差)
+        plt.errorbar(t, EFs, yerr=deltaEFs, fmt='o', label='Electric Field Standard Deviation', 
+                    color='r', capsize=0.1, elinewidth=0.2, linestyle='None', markersize=0.1)
+
+        # 設定圖標標題與軸標籤
+        plt.title('Electric Field vs Time', fontsize=14)
+        plt.xlabel('Time', fontsize=12)
+        plt.ylabel('Electric Field Expectation Value', fontsize=12)
+
+        # 顯示圖例
+        plt.legend()
+
+        # 顯示圖形
+        plt.show()
+        
     def volume_integration(self, x, y, Dens):
         dx = x[1] - x[0]
         dy = y[1] - y[0]
         Sum = np.sum(Dens) * np.abs(dx) * np.abs(dy)
         return Sum
+    
+    def rms_error(self, X,Y):
+        return (np.sum((X - Y)**2)/np.sum(X)**2)**0.5
     
     def log_warning_message(self, t, ProbDensSum, center_x, center_y, log_file):
         # Calculate the difference from 1.0
@@ -118,9 +186,8 @@ class FokkerPlanckSimulator:
             log_file.write(f"WARNING: Step {t}, Time = {self.t_vals[t]:.2f}, ProbDensSum = {ProbDensSum:.4f}, Center = ({center_x:.4f}, {center_y:.4f})\nProbability summation on the plane has deviation larger than 1.0%! Simulation Box may be too small.\n")
         else:
             log_file.write(f"Step {t}, Time = {self.t_vals[t]:.2f}, ProbDensSum = {ProbDensSum:.4f}, Center = ({center_x:.4f}, {center_y:.4f})\n")
-
     
-    def save_snapshot(self, t, ProbDens):
+    def save_snapshot(self, t, ProbDens, name):
         # Create a plot for the Probability Distribution
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         im = ax.imshow(ProbDens.T, extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower', aspect='auto', cmap='hot')#, vmin=self.vmin, vmax=self.vmax)
@@ -135,7 +202,7 @@ class FokkerPlanckSimulator:
         ax.legend(loc="upper right")
 
         # Save snapshot
-        plt.savefig(f'{self.output_dir}/Snapshots/snapshot_{t:04d}.png')
+        plt.savefig(name)
         plt.close(fig)
 
     def plot_center_path(self):
