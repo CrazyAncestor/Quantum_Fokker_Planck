@@ -129,11 +129,15 @@ class FokkerPlanckSimulator:
         else:
             return self.volume_integration(self.x, self.y, ProbDens * Exp_Func(Alpha, Alpha_star))
         
-    def electric_field_evolution(self):
+    def electric_field_evolution(self, representation):
         def EF(alpha,alpha_star):
             return (alpha + alpha_star)/2.
-        def EF2(alpha,alpha_star):
-            return (alpha**2 + alpha_star**2 + 2 * alpha * alpha_star + 1)/4.
+        if representation == 'P':
+            def EF2(alpha,alpha_star):
+                return (alpha**2 + alpha_star**2 + 2 * alpha * alpha_star + 1)/4.
+        elif representation == 'Q':
+            def EF2(alpha,alpha_star):
+                return (alpha**2 + alpha_star**2 + 2 * alpha * alpha_star - 1)/4.
         
         t = []
         EFs = []
@@ -234,7 +238,7 @@ class FokkerPlanckSimulator:
             print("Error: Length of time and centroid_x do not match.")
 
     def plot_parameter_evolution(self):
-        if len(self.solution[0])==4 or len(self.solution[0])==6:
+        if len(self.solution[0])<=6:
             # Plot the evolution of b(t), c(t), d(t) versus time in subplots
             plt.figure(figsize=(10, 8))
 
@@ -281,7 +285,7 @@ class FokkerPlanckSimulator:
             plt.savefig(f'{self.output_dir}/Parameter_bcd_evolution.png')
             plt.close()
 
-        elif len(self.solution[0])==15 or len(self.solution[0])==12:
+        elif len(self.solution[0])>6:
             # Plot the evolution of b(t), c(t), d(t), e(t) versus time in subplots
             plt.figure(figsize=(10, 8))
 

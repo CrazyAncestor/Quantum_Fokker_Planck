@@ -19,22 +19,23 @@ def rk4_step(t, y, dt, phys_parameter):
 # Define the system of differential equations
 def system(t, y, phys_parameter):
     gamma, nu, n_th, eps2, x0, y0 =  phys_parameter
-    a, b, c, d = y
-    a_prime = gamma * (1 + n_th * (d + (b**2 + c**2)/4))
-    b_prime = gamma * b/2 + gamma * n_th * b * d + nu * c
-    c_prime = gamma * c/2 + gamma * n_th * c * d - nu * b
-    d_prime = gamma * (d + n_th * d**2)
-    
-    return np.array([a_prime, b_prime, c_prime, d_prime])
+    a, b, c, d, e = y
+    a_prime = (gamma*(2*d + 2*e + 2*d*n_th + 2*e*n_th + b**2*n_th + c**2*n_th + b**2 + c**2 + 4))/4
+    b_prime = (b*gamma*(2*d + 2*d*n_th + 1))/2
+    c_prime = (c*gamma*(2*e + 2*e*n_th + 1))/2
+    d_prime = gamma*(n_th + 1)*d**2 + gamma*d
+    e_prime = gamma*(n_th + 1)*e**2 + gamma*e
+
+    return np.array([a_prime, b_prime, c_prime, d_prime, e_prime])
 
 # Plotting complex representation function with parameters
 def ProbDensMap(x, y, solution):
     X, Y = np.meshgrid(x, y)
-    a, b, c, d = solution
-    ProbDens = np.exp(a + b * X + c * Y + d * (X**2 + Y**2))
+    a, b, c, d, e = solution
+    ProbDens = np.exp(a + b * X + c * Y + d * X**2 + e * Y**2)
     return ProbDens
 
-# Analytical solution function
+"""# Analytical solution function
 def AnalyticalSol(x, y, t, phys_parameter):
     X, Y = np.meshgrid(x, y)
     gamma, nu, n_th, eps2, x0, y0 =  phys_parameter
@@ -46,7 +47,7 @@ def AnalyticalSol(x, y, t, phys_parameter):
 
     ProbDens = np.exp(-((X-xbar)**2 + (Y-ybar)**2)/Dt) / np.pi / Dt
     return ProbDens
-
+"""
 def intensity(a,astar):
     return a*astar
 
@@ -54,9 +55,9 @@ def intensity(a,astar):
 #   Physical Parameter
 gamma = 1.0
 nu = 3
-n_th = 0.01
+n_th = 3
 
-eps2 = 0.01
+eps2 = 1
 x0 = 2
 y0 = 2
 
@@ -67,7 +68,8 @@ a0 = - (x0 * x0 + y0 * y0)/eps2  - Dim * np.log( np.sqrt(np.pi * eps2)) # Initia
 b0 = 2 * x0 /eps2  # Initial condition for b
 c0 = 2 * y0 /eps2  # Initial condition for c
 d0 = - 1/eps2  # Initial condition for d
-init_cond = np.array([a0, b0, c0, d0])
+e0 = - 1/eps2  # Initial condition for e
+init_cond = np.array([a0, b0, c0, d0, e0])
 
 #   Time parameter
 t_start = 0
@@ -78,9 +80,9 @@ dt= 0.01
 x = np.linspace(-5, 5, 100)
 y = np.linspace(-5, 5, 100)
 
-output_dir = "PhotonDissipation"
+output_dir = "Q_rep_PhotonDissipation"
 
 # Instantiate and run the simulation
-simulator = FokkerPlanckSimulator(t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step, analytical=AnalyticalSol)
-simulator.run_simulation(pure_parameter = True)
-simulator.electric_field_evolution(representation='P')
+simulator = FokkerPlanckSimulator(t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step)
+simulator.run_simulation(pure_parameter = False)
+simulator.electric_field_evolution(representation='Q')
