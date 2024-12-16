@@ -48,6 +48,7 @@ def rk4_step(t, y, dt, phys_parameter, time_deriv_funcs):
 def system(t, y, phys_parameter, time_deriv_funcs):
     gamma, eta, nu, omega, n_th, m_th, g =  phys_parameter
     a0, b0, c0, d0, e0, f0, h0, k0, l0, o0, p0, q0, r0, s0, w0 = y
+
     a_prime, b_prime, c_prime, d_prime,e_prime, f_prime, h_prime, k_prime,l_prime,o_prime, p_prime, q_prime, r_prime,s_prime,w_prime = time_deriv_funcs
     
     a_prime0 = a_prime(a0, b0, c0, d0, e0, f0, h0, k0, l0, o0, p0, q0, r0, s0, w0, gamma, eta, nu, omega, n_th, m_th, g)
@@ -136,18 +137,18 @@ x = np.linspace(-5, 5, 100)
 y = np.linspace(-5, 5, 100)
 
 #   Output directory
-output_dir = "P_rep_RWA"
+output_dir = "Q_rep_RWA"
 
 # Symbolic formula solver settings
 #   Choice of Probability Representation
-representation = 'P'
+representation = 'Q'
 SymSolver = SymbolicSolver()
 gamma_sym, eta_sym, nu_sym, omega_sym, n_th_sym, m_th_sym, g_sym = sp.symbols('gamma_sym eta_sym nu_sym omega_sym n_th_sym m_th_sym g_sym')
 
-def RWA_PREP(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv):
+def RWA_QREP(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv):
     TD1 = (gamma_sym + eta_sym) + (gamma_sym/2 * x - nu_sym * y - g_sym * v) * Px + (gamma_sym/2 * y + (nu_sym) * x + g_sym * u) * Py
     TD2 = (eta_sym/2 * u - (omega_sym) * v - g_sym *y) * Pu + (eta_sym/2 * v + (omega_sym) * u + g_sym * x) * Pv
-    TD3 = gamma_sym * (n_th_sym) / 4 * (Pxx + Pyy) + eta_sym * (m_th_sym) / 4 * (Puu + Pvv)
+    TD3 = gamma_sym * (n_th_sym+1) / 4 * (Pxx + Pyy) + eta_sym * (m_th_sym+1) / 4 * (Puu + Pvv)
     return TD1 + TD2 + TD3  
 
 x_sym, y_sym, u_sym, v_sym, a, b, c, d, e, f, h, k, l, o, p, q, r, s, w = sp.symbols('x_sym y_sym u_sym v_sym a b c d e f h k l o p q r s w')
@@ -155,7 +156,7 @@ x_sym, y_sym, u_sym, v_sym, a, b, c, d, e, f, h, k, l, o, p, q, r, s, w = sp.sym
 # Use exponential function to simulate the solution of Fokker-Planck eq.
 ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*u_sym + e*v_sym + f*x_sym**2 + h*y_sym**2 + k*u_sym**2 + l*v_sym**2 + o*x_sym*y_sym + p*u_sym*v_sym +q*x_sym*u_sym + r*y_sym*u_sym + s*x_sym*v_sym +w*y_sym*v_sym)
 
-time_deriv_funcs = generate_time_deriv_funcs(SymSolver, RWA_PREP, ProbFunc)
+time_deriv_funcs = generate_time_deriv_funcs(SymSolver, RWA_QREP, ProbFunc)
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(representation, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step, time_deriv_funcs)

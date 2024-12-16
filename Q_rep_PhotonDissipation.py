@@ -6,20 +6,9 @@ from fokker_planck_simulator import FokkerPlanckSimulator
 from Symbolic_Time_Deriv_Solver import SymbolicSolver
 import sympy as sp
 
-gamma_sym, nu_sym, n_th_sym = sp.symbols('gamma_sym nu_sym n_th_sym')
-
-# Use exponential function to simulate the solution of Fokker-Planck eq.
-def PT_model_QREP(x,y,Px,Py,Pxx,Pyy,Pxy):
-    PT1 = gamma_sym + (gamma_sym / 2 * x - nu_sym * y) * Px + (gamma_sym / 2 * y + nu_sym * x) * Py
-    PT2 = gamma_sym * (n_th_sym + 1) / 4 * (Pxx + Pyy)
-    return PT1 + PT2
-
-x_sym, y_sym, a, b, c, d, e, f = sp.symbols('x_sym y_sym a b c d e f')
-Q = sp.exp(a + b*x_sym + c*y_sym + d*x_sym**2 + e*y_sym**2 + f*x_sym*y_sym)
-
-def generate_time_deriv_funcs(symsolver, PT_model):  
+def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):  
       
-    PT_const, PTx, PTy, PTxx, PTyy, PTxy = symsolver.one_mode_fokker_planck(PT_model, Q, x_sym, y_sym, a, b, c, d, e, f)
+    PT_const, PTx, PTy, PTxx, PTyy, PTxy = symsolver.one_mode_fokker_planck(PHYS_model,prob_func_sym, x_sym, y_sym, a, b, c, d, e, f)
 
     a_prime = sp.lambdify((a,b,c,d,e,f, gamma_sym, nu_sym, n_th_sym), PT_const, 'numpy')
     b_prime = sp.lambdify((a,b,c,d,e,f, gamma_sym, nu_sym, n_th_sym), PTx, 'numpy')
@@ -69,12 +58,10 @@ def intensity(a,astar):
     return a*astar
 
 # Initialize simulation parameters
-#   Choice of Probability Representation
-representation = 'Q'
 #   Physical Parameter
 gamma = 1.0
 nu = 3
-n_th = 3
+n_th = 0
 
 eps2 = 1
 x0 = 2
@@ -100,11 +87,27 @@ dt= 0.01
 x = np.linspace(-5, 5, 100)
 y = np.linspace(-5, 5, 100)
 
+#   Output directory
 output_dir = "Q_rep_PhotonDissipation"
 
-# Instantiate and run the simulation
+# Symbolic formula solver settings
+#   Choice of Probability Representation
+representation = 'Q'
 SymSolver = SymbolicSolver()
-time_deriv_funcs = generate_time_deriv_funcs(SymSolver, PT_model_QREP)
+gamma_sym, nu_sym, n_th_sym = sp.symbols('gamma_sym nu_sym n_th_sym')
+
+def Photon_QREP(x,y,Px,Py,Pxx,Pyy,Pxy):
+    PT1 = gamma_sym + (gamma_sym / 2 * x - nu_sym * y) * Px + (gamma_sym / 2 * y + nu_sym * x) * Py
+    PT2 = gamma_sym * (n_th_sym+1) / 4 * (Pxx + Pyy)
+    return PT1 + PT2
+
+x_sym, y_sym, a, b, c, d, e, f = sp.symbols('x_sym y_sym a b c d e f')
+
+# Use exponential function to simulate the solution of Fokker-Planck eq.
+ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*x_sym**2 + e*y_sym**2 + f*x_sym*y_sym)
+
+# Instantiate and run the simulation
+time_deriv_funcs = generate_time_deriv_funcs(SymSolver, Photon_QREP, ProbFunc)
 simulator = FokkerPlanckSimulator(representation, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step, time_deriv_funcs)
 simulator.run_simulation(pure_parameter = False)
 simulator.electric_field_evolution()

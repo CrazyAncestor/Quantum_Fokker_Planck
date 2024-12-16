@@ -34,7 +34,7 @@ class SymbolicSolver:
     def exp_diff_deriv(self, func, var1, var2):
         return sp.simplify(sp.diff(sp.diff(func, var1), var2) / func)
     
-    def one_mode_fokker_planck(self, PT_model,func,x, y, a, b, c, d, e, f):
+    def one_mode_fokker_planck(self, PHYS_model,func,x, y, a, b, c, d, e, f):
             P = sp.exp(a + b*x + c*y + d*x**2 + e*y**2 + f*x*y)
             
             # 計算 P 的一階和二階導數
@@ -53,31 +53,31 @@ class SymbolicSolver:
             Px, Py, Pxx, Pyy, Pxy = fst_snd_derivs(func, x, y)
 
             # 計算 P 的時間導數
-            PT = PT_model(x,y,Px,Py,Pxx,Pyy,Pxy)
+            TD = PHYS_model(x,y,Px,Py,Pxx,Pyy,Pxy)
 
             # 提取係數的函數
-            def extract_coef(PT, x, y):
-                PTxx = self.snd_deriv(PT, x)
-                PTyy = self.snd_deriv(PT, y)
-                PTxy = self.diff_deriv(PT,x,y)
+            def extract_coef(TD, x, y):
+                TDxx = self.snd_deriv(TD, x)
+                TDyy = self.snd_deriv(TD, y)
+                TDxy = self.diff_deriv(TD,x,y)
 
-                PTx = sp.simplify(self.fst_deriv(PT, x) - (PTxx * x) - (PTxy * y))
-                PTy = sp.simplify(self.fst_deriv(PT, y) - (PTyy * y) - (PTxy * x))
+                TDx = sp.simplify(self.fst_deriv(TD, x) - (TDxx * x) - (TDxy * y))
+                TDy = sp.simplify(self.fst_deriv(TD, y) - (TDyy * y) - (TDxy * x))
 
-                PT_const = PT - ((PTxx * x**2 + PTyy * y**2) / 2 + PTxy * x * y + (PTx * x + PTy * y))
-                PT_const = sp.simplify(PT_const)
+                TD_const = TD - ((TDxx * x**2 + TDyy * y**2) / 2 + TDxy * x * y + (TDx * x + TDy * y))
+                TD_const = sp.simplify(TD_const)
 
-                PTxx = PTxx / 2
-                PTyy = PTyy / 2
+                TDxx = TDxx / 2
+                TDyy = TDyy / 2
                 
-                return PT_const, PTx, PTy, PTxx, PTyy, PTxy
+                return TD_const, TDx, TDy, TDxx, TDyy, TDxy
 
             # 提取時間導數的各項係數
             
-            PT_const, PTx, PTy, PTxx, PTyy, PTxy = extract_coef(PT, x, y)
-            return PT_const, PTx, PTy, PTxx, PTyy, PTxy
+            TD_const, TDx, TDy, TDxx, TDyy, TDxy = extract_coef(TD, x, y)
+            return TD_const, TDx, TDy, TDxx, TDyy, TDxy
     
-    def two_mode_fokker_planck(self, PT_model, func,x, y, u, v, a, b, c, d, e, f, h, k, l, o, p, q, r, s, w):
+    def two_mode_fokker_planck(self, PHYS_model, func,x, y, u, v, a, b, c, d, e, f, h, k, l, o, p, q, r, s, w):
             
             # Calculate the first and second derivatives for P
             def fst_snd_derivs(func, x, y, u, v):
@@ -105,43 +105,43 @@ class SymbolicSolver:
 
 
             # 計算 P 的時間導數
-            PT = PT_model(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv)
+            TD = PHYS_model(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv)
 
             # Extract each component in the time derivative
-            def extract_coef(PT, x, y, u, v):
-                PTxx = self.snd_deriv(PT, x)
-                PTyy = self.snd_deriv(PT, y)
-                PTuu = self.snd_deriv(PT, u)
-                PTvv = self.snd_deriv(PT, v)
+            def extract_coef(TD, x, y, u, v):
+                TDxx = self.snd_deriv(TD, x)
+                TDyy = self.snd_deriv(TD, y)
+                TDuu = self.snd_deriv(TD, u)
+                TDvv = self.snd_deriv(TD, v)
                 
-                PTxy = self.diff_deriv(PT, x, y)
-                PTuv = self.diff_deriv(PT, u, v)
-                PTxu = self.diff_deriv(PT, x, u)
-                PTyu = self.diff_deriv(PT, y, u)
-                PTxv = self.diff_deriv(PT, x, v)
-                PTyv = self.diff_deriv(PT, y, v)
+                TDxy = self.diff_deriv(TD, x, y)
+                TDuv = self.diff_deriv(TD, u, v)
+                TDxu = self.diff_deriv(TD, x, u)
+                TDyu = self.diff_deriv(TD, y, u)
+                TDxv = self.diff_deriv(TD, x, v)
+                TDyv = self.diff_deriv(TD, y, v)
                 
-                PTx = sp.simplify(self.fst_deriv(PT, x) - (PTxx * x + PTxu * u + PTxv * v + PTxy * y))
-                PTy = sp.simplify(self.fst_deriv(PT, y) - (PTyy * y + PTyu * u + PTyv * v + PTxy * x))
+                TDx = sp.simplify(self.fst_deriv(TD, x) - (TDxx * x + TDxu * u + TDxv * v + TDxy * y))
+                TDy = sp.simplify(self.fst_deriv(TD, y) - (TDyy * y + TDyu * u + TDyv * v + TDxy * x))
                 
-                PTu = sp.simplify(self.fst_deriv(PT, u) - (PTuu * u + PTxu * x + PTuv * v + PTyu * y))
-                PTv = sp.simplify(self.fst_deriv(PT, v) - (PTvv * v + PTuv * u + PTyv * y + PTxv * x))
+                TDu = sp.simplify(self.fst_deriv(TD, u) - (TDuu * u + TDxu * x + TDuv * v + TDyu * y))
+                TDv = sp.simplify(self.fst_deriv(TD, v) - (TDvv * v + TDuv * u + TDyv * y + TDxv * x))
                 
-                PT_const = PT - ((PTxx * x**2 + PTyy * y**2 + PTuu * u**2 + PTvv * v**2)/2 + 
-                                (PTxu * x * u + PTyu * y * u + PTxv * x * v + PTyv * y * v + PTxy * x * y + PTuv * u * v) + 
-                                (PTx * x + PTy * y + PTu * u + PTv * v))
-                PT_const = sp.simplify(PT_const)
+                TD_const = TD - ((TDxx * x**2 + TDyy * y**2 + TDuu * u**2 + TDvv * v**2)/2 + 
+                                (TDxu * x * u + TDyu * y * u + TDxv * x * v + TDyv * y * v + TDxy * x * y + TDuv * u * v) + 
+                                (TDx * x + TDy * y + TDu * u + TDv * v))
+                TD_const = sp.simplify(TD_const)
 
-                PTxx = PTxx / 2
-                PTyy = PTyy / 2
-                PTuu = PTuu / 2
-                PTvv = PTvv / 2
+                TDxx = TDxx / 2
+                TDyy = TDyy / 2
+                TDuu = TDuu / 2
+                TDvv = TDvv / 2
                 
-                return PT_const, PTx, PTy, PTu, PTv, PTxx, PTyy, PTuu, PTvv, PTxy, PTuv, PTxu, PTyu, PTxv, PTyv
+                return TD_const, TDx, TDy, TDu, TDv, TDxx, TDyy, TDuu, TDvv, TDxy, TDuv, TDxu, TDyu, TDxv, TDyv
 
 
             # 提取時間導數的各項係數
             
             # Extract coefficients from the time-derivative
-            PT_const, PTx, PTy, PTu, PTv, PTxx, PTyy, PTuu, PTvv, PTxy, PTuv, PTxu, PTyu, PTxv, PTyv = extract_coef(PT, x, y, u, v)
-            return PT_const, PTx, PTy, PTu, PTv, PTxx, PTyy, PTuu, PTvv, PTxy, PTuv, PTxu, PTyu, PTxv, PTyv
+            TD_const, TDx, TDy, TDu, TDv, TDxx, TDyy, TDuu, TDvv, TDxy, TDuv, TDxu, TDyu, TDxv, TDyv = extract_coef(TD, x, y, u, v)
+            return TD_const, TDx, TDy, TDu, TDv, TDxx, TDyy, TDuu, TDvv, TDxy, TDuv, TDxu, TDyu, TDxv, TDyv
