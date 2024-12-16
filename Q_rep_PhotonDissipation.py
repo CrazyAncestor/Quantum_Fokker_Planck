@@ -6,7 +6,7 @@ from fokker_planck_simulator import FokkerPlanckSimulator
 from Symbolic_Time_Deriv_Solver import SymbolicSolver
 import sympy as sp
 
-def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):  
+def solve_time_deriv_sym(symsolver, PHYS_model, prob_func_sym):  
     # Call the Fokker-Planck solver to get the time derivative functions
     TD_consts = symsolver.one_mode_fokker_planck(PHYS_model, prob_func_sym, x_sym, y_sym, 
                                                  a, b, c, d, e, f)
@@ -16,7 +16,7 @@ def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):
         TD_consts[i] for i in range(6)
     ]
     
-    # Create symbolic variables for the system
+    # Create symbolic variables for the system_time_evolution
     symbols = (a, b, c, d, e, f, gamma_sym, nu_sym, n_th_sym)
 
     # Create lambdified functions for all derivatives using a loop
@@ -26,7 +26,7 @@ def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):
     
     return tuple(time_deriv_funcs)
 
-def system(t, y, phys_parameter, time_deriv_funcs):
+def system_time_evolution(t, y, phys_parameter, time_deriv_funcs):
     # Unpack physical parameters
     gamma, nu, n_th= phys_parameter
 
@@ -95,9 +95,9 @@ ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*x_sym**2 + e*y_sym**2 + f*x_sym*y_sy
 probdensmap_mode = '2D'
 
 # Solve the symbolic formula of the time derivatives of the evolving parameters
-time_deriv_funcs = generate_time_deriv_funcs(SymSolver, Photon_QREP, ProbFunc)
+time_deriv_funcs = solve_time_deriv_sym(SymSolver, Photon_QREP, ProbFunc)
 
 # Instantiate and run the simulation
-simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system, time_deriv_funcs)
+simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system_time_evolution, time_deriv_funcs)
 simulator.run_simulation(pure_parameter = False)
 simulator.electric_field_evolution()

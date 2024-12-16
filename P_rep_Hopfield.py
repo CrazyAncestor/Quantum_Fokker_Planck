@@ -6,7 +6,7 @@ from fokker_planck_simulator import FokkerPlanckSimulator
 from Symbolic_Time_Deriv_Solver import SymbolicSolver
 import sympy as sp
 
-def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):  
+def solve_time_deriv_sym(symsolver, PHYS_model, prob_func_sym):  
     # Call the Fokker-Planck solver to get the time derivative functions
     TD_consts = symsolver.two_mode_fokker_planck(PHYS_model, prob_func_sym, x_sym, y_sym, u_sym, v_sym, 
                                                  a, b, c, d, e, f, h, k, l, o, p, q, r, s, w)
@@ -16,7 +16,7 @@ def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):
         TD_consts[i] for i in range(15)
     ]
     
-    # Create symbolic variables for the system
+    # Create symbolic variables for the system_time_evolution
     symbols = (a, b, c, d, e, f, h, k, l, o, p, q, r, s, w, gamma_sym, eta_sym, nu_sym, omega_sym, 
                n_th_sym, m_th_sym, g_sym, Dia_sym)
 
@@ -27,7 +27,7 @@ def generate_time_deriv_funcs(symsolver, PHYS_model, prob_func_sym):
     
     return tuple(time_deriv_funcs)
 
-def system(t, y, phys_parameter, time_deriv_funcs):
+def system_time_evolution(t, y, phys_parameter, time_deriv_funcs):
     # Unpack physical parameters
     gamma, eta, nu, omega, n_th, m_th, g, Dia = phys_parameter
 
@@ -116,9 +116,9 @@ ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*u_sym + e*v_sym + f*x_sym**2 + h*y_s
 probdensmap_mode = '4D'
 
 # Solve the symbolic formula of the time derivatives of the evolving parameters
-time_deriv_funcs = generate_time_deriv_funcs(SymSolver, Hopfield_PREP, ProbFunc)
+time_deriv_funcs = solve_time_deriv_sym(SymSolver, Hopfield_PREP, ProbFunc)
 
 # Instantiate and run the simulation
-simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system, time_deriv_funcs)
+simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system_time_evolution, time_deriv_funcs)
 simulator.run_simulation(pure_parameter = False)
 simulator.electric_field_evolution()

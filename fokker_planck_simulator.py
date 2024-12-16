@@ -6,7 +6,7 @@ import cmath
 import sympy as sp
 
 class FokkerPlanckSimulator:
-    def __init__(self, representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system, time_deriv_funcs, analytical=None):
+    def __init__(self, representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system_time_evolution, time_deriv_funcs, analytical=None):
         # Simulation time settings
         self.representation = representation
         self.t_start, self.t_end, self.dt = simulation_time_setting
@@ -25,7 +25,7 @@ class FokkerPlanckSimulator:
 
         # Functions for simulation
         self.probdensmap_mode = probdensmap_mode
-        self.system = system
+        self.system_time_evolution = system_time_evolution
         self.time_deriv_funcs = time_deriv_funcs
         self.analytical = analytical
 
@@ -117,10 +117,10 @@ class FokkerPlanckSimulator:
     # RK4 Solver
     def rk4_step(self, t, y, dt, phys_parameter, time_deriv_funcs):
         # Get the k1, k2, k3, k4 slopes
-        k1 = dt* self.system(t, y, phys_parameter, time_deriv_funcs)
-        k2 = dt* self.system(t + dt/2, y + k1/2, phys_parameter, time_deriv_funcs)
-        k3 = dt* self.system(t + dt/2, y + k2/2, phys_parameter, time_deriv_funcs)
-        k4 = dt* self.system(t + dt, y + k3, phys_parameter, time_deriv_funcs)
+        k1 = dt* self.system_time_evolution(t, y, phys_parameter, time_deriv_funcs)
+        k2 = dt* self.system_time_evolution(t + dt/2, y + k1/2, phys_parameter, time_deriv_funcs)
+        k3 = dt* self.system_time_evolution(t + dt/2, y + k2/2, phys_parameter, time_deriv_funcs)
+        k4 = dt* self.system_time_evolution(t + dt, y + k3, phys_parameter, time_deriv_funcs)
         
         # Update the solution using the weighted average
         return y + (k1 + 2*k2 + 2*k3 + k4) / 6
