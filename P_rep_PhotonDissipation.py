@@ -9,17 +9,17 @@ import sympy as sp
 gamma_sym, nu_sym, n_th_sym = sp.symbols('gamma_sym nu_sym n_th_sym')
 
 # Use exponential function to simulate the solution of Fokker-Planck eq.
-def PT_model_QREP(x,y,Px,Py,Pxx,Pyy,Pxy):
+def PT_model_PREP(x,y,Px,Py,Pxx,Pyy,Pxy):
     PT1 = gamma_sym + (gamma_sym / 2 * x - nu_sym * y) * Px + (gamma_sym / 2 * y + nu_sym * x) * Py
-    PT2 = gamma_sym * (n_th_sym + 1) / 4 * (Pxx + Pyy)
+    PT2 = gamma_sym * (n_th_sym ) / 4 * (Pxx + Pyy)
     return PT1 + PT2
 
 x_sym, y_sym, a, b, c, d, e, f = sp.symbols('x_sym y_sym a b c d e f')
-Q = sp.exp(a + b*x_sym + c*y_sym + d*x_sym**2 + e*y_sym**2 + f*x_sym*y_sym)
+P = sp.exp(a + b*x_sym + c*y_sym + d*x_sym**2 + e*y_sym**2 + f*x_sym*y_sym)
 
 def generate_time_deriv_funcs(symsolver, PT_model):  
       
-    PT_const, PTx, PTy, PTxx, PTyy, PTxy = symsolver.one_mode_fokker_planck(PT_model, Q, x_sym, y_sym, a, b, c, d, e, f)
+    PT_const, PTx, PTy, PTxx, PTyy, PTxy = symsolver.one_mode_fokker_planck(PT_model, P, x_sym, y_sym, a, b, c, d, e, f)
 
     a_prime = sp.lambdify((a,b,c,d,e,f, gamma_sym, nu_sym, n_th_sym), PT_const, 'numpy')
     b_prime = sp.lambdify((a,b,c,d,e,f, gamma_sym, nu_sym, n_th_sym), PTx, 'numpy')
@@ -70,13 +70,13 @@ def intensity(a,astar):
 
 # Initialize simulation parameters
 #   Choice of Probability Representation
-representation = 'Q'
+representation = 'P'
 #   Physical Parameter
 gamma = 1.0
 nu = 3
 n_th = 3
 
-eps2 = 1
+eps2 = 0.1
 x0 = 2
 y0 = 2
 
@@ -100,11 +100,11 @@ dt= 0.01
 x = np.linspace(-5, 5, 100)
 y = np.linspace(-5, 5, 100)
 
-output_dir = "Q_rep_PhotonDissipation"
+output_dir = "P_rep_PhotonDissipation"
 
 # Instantiate and run the simulation
 SymSolver = SymbolicSolver()
-time_deriv_funcs = generate_time_deriv_funcs(SymSolver, PT_model_QREP)
+time_deriv_funcs = generate_time_deriv_funcs(SymSolver, PT_model_PREP)
 simulator = FokkerPlanckSimulator(representation, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step, time_deriv_funcs)
 simulator.run_simulation(pure_parameter = False)
 simulator.electric_field_evolution()

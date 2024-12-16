@@ -6,8 +6,9 @@ import cmath
 import sympy as sp
 
 class FokkerPlanckSimulator:
-    def __init__(self, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, solver, time_deriv_funcs, analytical=None):
+    def __init__(self, representation, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, solver, time_deriv_funcs, analytical=None):
         # Simulation time settings
+        self.representation = representation
         self.t_start = t_start
         self.t_end = t_end
         self.dt = dt
@@ -132,13 +133,13 @@ class FokkerPlanckSimulator:
         else:
             return self.volume_integration(self.x, self.y, ProbDens * Exp_Func(Alpha, Alpha_star))
         
-    def electric_field_evolution(self, representation):
+    def electric_field_evolution(self):
         def EF(alpha,alpha_star):
             return (alpha + alpha_star)/2.
-        if representation == 'P':
+        if self.representation == 'P':
             def EF2(alpha,alpha_star):
                 return (alpha**2 + alpha_star**2 + 2 * alpha * alpha_star + 1)/4.
-        elif representation == 'Q':
+        elif self.representation == 'Q':
             def EF2(alpha,alpha_star):
                 return (alpha**2 + alpha_star**2 + 2 * alpha * alpha_star - 1)/4.
         
@@ -213,170 +214,32 @@ class FokkerPlanckSimulator:
         plt.close(fig)
 
     def plot_center_path(self):
-        # Plot the path of the center of the distribution at the end of the simulation
         plt.figure(figsize=(8, 6))
-        plt.plot(self.centroid_x, self.centroid_y, 'k-', label='Path of the Center', linewidth=2)
-        plt.xlabel(r"Re{$\alpha$} (x)")
-        plt.ylabel(r"Im{$\alpha$} (y)")
-        plt.title("Path of the Center of the Probability Distribution")
-        plt.legend()
+        plt.plot(self.centroid_x, self.centroid_y, 'k-', linewidth=2)
+        plt.xlabel(r'Re{$\alpha$}')
+        plt.ylabel(r'Im{$\alpha$}')
+        plt.title('Path of the Center of the Distribution')
         plt.grid(True)
         plt.tight_layout()
-
-        # Save the plot as a PNG file
         plt.savefig(f'{self.output_dir}/Center_Path.png')
         plt.close()
 
-        # Assuming self.time and self.centroid_x are lists or arrays with the same length
         if len(self.time) == len(self.centroid_x):
-            # Stack time and centroid_x into a 2D array (time, centroid_x)
             data = np.column_stack((self.time, self.centroid_x))
-
-            # Save time and centroid_x to a text file
-            centroid_file = f'{self.output_dir}/time_centroid_x_values.txt'
-            np.savetxt(centroid_file, data, fmt=['%.6f', '%.6f'], header='Time\tCentroid_X', delimiter='\t')
-
-            print(f"Time and centroid_x values saved to {centroid_file}")
-        else:
-            print("Error: Length of time and centroid_x do not match.")
+            np.savetxt(f'{self.output_dir}/time_centroid_x_values.txt', data, fmt=['%.6f', '%.6f'], delimiter='\t')
+            print(f"Time and centroid_x values saved to {self.output_dir}/time_centroid_x_values.txt")
 
     def plot_parameter_evolution(self):
-        if len(self.solution[0])<=6:
-            # Plot the evolution of b(t), c(t), d(t) versus time in subplots
-            plt.figure(figsize=(10, 8))
-
-            # Subplot for b(t)
-            plt.subplot(2, 2, 1)
-            plt.plot(self.t_vals, self.solution[:, 0], label="a(t)", color='g')
-            plt.xlabel("Time (t)")
-            plt.ylabel("a(t)")
-            plt.title("Evolution of a(t) over Time")
+        plt.figure(figsize=(10, 8))
+        n_params = len(self.solution[0])
+        for i in range(min(n_params, 6)):
+            plt.subplot(2, 3, i+1)
+            plt.plot(self.t_vals, self.solution[:, i], label=f'param {i+1}(t)')
+            plt.xlabel("Time")
+            plt.ylabel(f'param {i+1}(t)')
+            plt.title(f"Evolution of param {i+1}(t)")
             plt.legend()
             plt.grid(True)
-
-            # Subplot for b(t)
-            plt.subplot(2, 2, 2)
-            plt.plot(self.t_vals, self.solution[:, 1], label="b(t)", color='g')
-            plt.xlabel("Time (t)")
-            plt.ylabel("b(t)")
-            plt.title("Evolution of b(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for c(t)
-            plt.subplot(2, 2, 3)
-            plt.plot(self.t_vals, self.solution[:, 2], label="c(t)", color='r')
-            plt.xlabel("Time (t)")
-            plt.ylabel("c(t)")
-            plt.title("Evolution of c(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for d(t)
-            plt.subplot(2, 2, 4)
-            plt.plot(self.t_vals, self.solution[:, 3], label="d(t)", color='c')
-            plt.xlabel("Time (t)")
-            plt.ylabel("d(t)")
-            plt.title("Evolution of d(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Adjust layout to prevent overlap
-            plt.tight_layout()
-
-            # Savefig
-            plt.savefig(f'{self.output_dir}/Parameter_bcd_evolution.png')
-            plt.close()
-
-        elif len(self.solution[0])>6:
-            # Plot the evolution of b(t), c(t), d(t), e(t) versus time in subplots
-            plt.figure(figsize=(10, 8))
-
-            # Subplot for b(t)
-            plt.subplot(2, 2, 1)
-            plt.plot(self.t_vals, self.solution[:, 1], label="b(t)", color='g')
-            plt.xlabel("Time (t)")
-            plt.ylabel("b(t)")
-            plt.title("Evolution of b(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for c(t)
-            plt.subplot(2, 2, 2)
-            plt.plot(self.t_vals, self.solution[:, 2], label="c(t)", color='r')
-            plt.xlabel("Time (t)")
-            plt.ylabel("c(t)")
-            plt.title("Evolution of c(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for d(t)
-            plt.subplot(2, 2, 3)
-            plt.plot(self.t_vals, self.solution[:, 3], label="d(t)", color='c')
-            plt.xlabel("Time (t)")
-            plt.ylabel("d(t)")
-            plt.title("Evolution of d(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for e(t)
-            plt.subplot(2, 2, 4)
-            plt.plot(self.t_vals, self.solution[:, 4], label="e(t)", color='m')  # e(t) is solution[:, 4]
-            plt.xlabel("Time (t)")
-            plt.ylabel("e(t)")
-            plt.title("Evolution of e(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Adjust layout to prevent overlap
-            plt.tight_layout()
-
-            # Savefig
-            plt.savefig(f'{self.output_dir}/Parameter_bcde_evolution.png')
-            plt.close()
-
-                # Plot the evolution of f(t), h(t), k(t), l(t) in a new figure
-            plt.figure(figsize=(10, 8))
-
-            # Subplot for f(t)
-            plt.subplot(2, 2, 1)
-            plt.plot(self.t_vals, self.solution[:, 5], label="f(t)", color='b')
-            plt.xlabel("Time (t)")
-            plt.ylabel("f(t)")
-            plt.title("Evolution of f(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for h(t)
-            plt.subplot(2, 2, 2)
-            plt.plot(self.t_vals, self.solution[:, 6], label="h(t)", color='orange')
-            plt.xlabel("Time (t)")
-            plt.ylabel("h(t)")
-            plt.title("Evolution of h(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for k(t)
-            plt.subplot(2, 2, 3)
-            plt.plot(self.t_vals, self.solution[:, 7], label="k(t)", color='purple')
-            plt.xlabel("Time (t)")
-            plt.ylabel("k(t)")
-            plt.title("Evolution of k(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Subplot for l(t)
-            plt.subplot(2, 2, 4)
-            plt.plot(self.t_vals, self.solution[:, 8], label="l(t)", color='brown')
-            plt.xlabel("Time (t)")
-            plt.ylabel("l(t)")
-            plt.title("Evolution of l(t) over Time")
-            plt.legend()
-            plt.grid(True)
-
-            # Adjust layout to prevent overlap
-            plt.tight_layout()
-
-            # Savefig
-            plt.savefig(f'{self.output_dir}/Parameter_fhkl_evolution.png')
-            plt.close()
+        plt.tight_layout()
+        plt.savefig(f'{self.output_dir}/Parameter_evolution.png')
+        plt.close()
