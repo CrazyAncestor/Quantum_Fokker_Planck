@@ -6,18 +6,15 @@ import cmath
 import sympy as sp
 
 class FokkerPlanckSimulator:
-    def __init__(self, representation, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, solver, time_deriv_funcs, analytical=None):
+    def __init__(self, representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, ProbDensMap, solver, time_deriv_funcs, analytical=None):
         # Simulation time settings
         self.representation = representation
-        self.t_start = t_start
-        self.t_end = t_end
-        self.dt = dt
-        self.nsteps = int((t_end - t_start) / dt)
-        self.t_vals = np.linspace(t_start, t_end, self.nsteps)
+        self.t_start, self.t_end, self.dt = simulation_time_setting
+        self.nsteps = int((self.t_end - self.t_start) / self.dt)
+        self.t_vals = np.linspace(self.t_start, self.t_end, self.nsteps)
 
-        # Grid for 2D probability distribution
-        self.x = x
-        self.y = y
+        # Grid for 2D probability representation value
+        self.x, self.y = simulation_grid_setting
 
         # Initial conditions and solution storage
         self.phys_parameter = phys_parameter
@@ -64,20 +61,20 @@ class FokkerPlanckSimulator:
                 self.u_init = self.ProbDensMap(self.x, self.y, self.init_cond)
                 self.vmin, self.vmax = np.min(self.u_init), np.max(self.u_init)
 
-                log_file.write(f"Initial probability density range: vmin={self.vmin}, vmax={self.vmax}.\n")
+                log_file.write(f"Initial representation value range: vmin={self.vmin}, vmax={self.vmax}.\n")
                 
                 # Time integration using RK4 with progress bar
                 for t in tqdm(range(1, self.nsteps), desc="Simulating", unit="step"):
                     self.solution[t] = self.solver(self.t_vals[t-1], self.solution[t-1], self.dt, self.phys_parameter, self.time_deriv_funcs)
 
-                    # Compute the Probability Distribution at the current time step
+                    # Compute the Representation value at the current time step
                     ProbDens = self.ProbDensMap(self.x, self.y, self.solution[t])
                     if compare_analytical:
                         AnaDens = self.analytical(self.x, self.y, (t)*self.dt, self.phys_parameter)
                         err = self.rms_error(AnaDens, ProbDens)
                         log_file.write(f"Comparison with analytical solution={err}.\n")
 
-                    # Calculate the center of the probability distribution
+                    # Calculate the center of the probability distribution cloud
                     weighted_sum_x = np.sum(self.x[:, None] * ProbDens)  # Sum over x for each y
                     weighted_sum_y = np.sum(self.y[None, :] * ProbDens)  # Sum over y for each x
                     total_weight = np.sum(ProbDens)  # Total sum (normalization factor)
@@ -174,7 +171,7 @@ class FokkerPlanckSimulator:
         plt.legend()
 
         # 顯示圖形
-        plt.show()
+        plt.savefig(f'{self.output_dir}/electric_field_time_evolution.png')
         
     def volume_integration(self, x, y, Dens):
         dx = x[1] - x[0]
@@ -191,19 +188,19 @@ class FokkerPlanckSimulator:
 
         # Check if the difference is more than 1% away from 1.0
         if diff_from_one > 0.01:
-            log_file.write(f"WARNING: Step {t}, Time = {self.t_vals[t]:.2f}, ProbDensSum = {ProbDensSum:.4f}, Center = ({center_x:.4f}, {center_y:.4f})\nProbability summation on the plane has deviation larger than 1.0%! Simulation Box may be too small.\n")
+            log_file.write(f"WARNING: Step {t}, Time = {self.t_vals[t]:.2f}, ProbDensSum = {ProbDensSum:.4f}, Center = ({center_x:.4f}, {center_y:.4f})\nProbability represenation value summation on the plane has deviation larger than 1.0%! Simulation Box may be too small.\n")
         else:
             log_file.write(f"Step {t}, Time = {self.t_vals[t]:.2f}, ProbDensSum = {ProbDensSum:.4f}, Center = ({center_x:.4f}, {center_y:.4f})\n")
     
     def save_snapshot(self, t, ProbDens, name):
-        # Create a plot for the Probability Distribution
+        # Create a plot for the Represenation Value
         fig, ax = plt.subplots(1, 1, figsize=(8, 6))
         im = ax.imshow(ProbDens.T, extent=[self.x[0], self.x[-1], self.y[0], self.y[-1]], origin='lower', aspect='auto', cmap='hot')#, vmin=self.vmin, vmax=self.vmax)
-        ax.set_title(f"Probability Distribution on Coherent State Plane at Time = {t * self.dt:.2f}")
+        ax.set_title(self.representation + f"-representation Time-evolution at Time = {t * self.dt:.2f}")
         ax.set_xlabel(r'Re{$\alpha$} (x)')
         ax.set_ylabel(r'Im{$\alpha$} (y)')
         cbar = plt.colorbar(im, ax=ax)
-        cbar.set_label('Probability Density')
+        cbar.set_label('Representation Value')
 
         # Plot the path of the center
         ax.plot(self.centroid_x, self.centroid_y, 'w-', label='Center Path', linewidth=2)

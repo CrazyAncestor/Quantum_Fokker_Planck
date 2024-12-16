@@ -131,10 +131,12 @@ init_cond = np.array([a0, b0, c0, d0, e0, f0, h0, k0, l0, o0, p0, q0, r0, s0, w0
 t_start = 0
 t_end = 10
 dt= 0.01
+simulation_time_setting = t_start, t_end, dt
 
 #   Map Parameter
 x = np.linspace(-5, 5, 100)
 y = np.linspace(-5, 5, 100)
+simulation_grid_setting = x, y
 
 #   Output directory
 output_dir = "Q_rep_RWA"
@@ -159,6 +161,6 @@ ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*u_sym + e*v_sym + f*x_sym**2 + h*y_s
 time_deriv_funcs = generate_time_deriv_funcs(SymSolver, RWA_QREP, ProbFunc)
 
 # Instantiate and run the simulation
-simulator = FokkerPlanckSimulator(representation, t_start, t_end, dt, x, y, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step, time_deriv_funcs)
+simulator = FokkerPlanckSimulator(representation, simulation_time_setting , simulation_grid_setting, phys_parameter, init_cond, output_dir, ProbDensMap, rk4_step, time_deriv_funcs)
 simulator.run_simulation(pure_parameter = False)
 simulator.electric_field_evolution()
