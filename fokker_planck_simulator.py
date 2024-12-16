@@ -6,7 +6,7 @@ import cmath
 import sympy as sp
 
 class FokkerPlanckSimulator:
-    def __init__(self, representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, ProbDensMap, solver, time_deriv_funcs, analytical=None):
+    def __init__(self, representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system, time_deriv_funcs, analytical=None):
         # Simulation time settings
         self.representation = representation
         self.t_start, self.t_end, self.dt = simulation_time_setting
@@ -24,10 +24,12 @@ class FokkerPlanckSimulator:
         self.solution[0] = init_cond
 
         # Functions for simulation
-        self.ProbDensMap = ProbDensMap
-        self.solver = solver
+        self.probdensmap_mode = probdensmap_mode
+        self.system = system
         self.time_deriv_funcs = time_deriv_funcs
         self.analytical = analytical
+
+        self.solver = self.rk4_step
 
         # Prepare output directory
         self.output_dir = str('bin/')+output_dir
@@ -58,7 +60,7 @@ class FokkerPlanckSimulator:
                 os.makedirs(self.output_dir+str('/Snapshots'), exist_ok=True)
                 if compare_analytical:
                     os.makedirs(self.output_dir+str('/AnalyticalSolution_Snapshots'), exist_ok=True)
-                self.u_init = self.ProbDensMap(self.x, self.y, self.init_cond)
+                self.u_init = self.ProbDensMap(self.probdensmap_mode, self.x, self.y, self.init_cond)
                 self.vmin, self.vmax = np.min(self.u_init), np.max(self.u_init)
 
                 log_file.write(f"Initial representation value range: vmin={self.vmin}, vmax={self.vmax}.\n")
@@ -68,7 +70,7 @@ class FokkerPlanckSimulator:
                     self.solution[t] = self.solver(self.t_vals[t-1], self.solution[t-1], self.dt, self.phys_parameter, self.time_deriv_funcs)
 
                     # Compute the Representation value at the current time step
-                    ProbDens = self.ProbDensMap(self.x, self.y, self.solution[t])
+                    ProbDens = self.ProbDensMap(self.probdensmap_mode, self.x, self.y, self.solution[t])
                     if compare_analytical:
                         AnaDens = self.analytical(self.x, self.y, (t)*self.dt, self.phys_parameter)
                         err = self.rms_error(AnaDens, ProbDens)
@@ -112,6 +114,35 @@ class FokkerPlanckSimulator:
             log_file.write(f"Simulation ended at {self.t_end}.\n")
             log_file.write("Simulation completed successfully.\n")
         
+    # RK4 Solver
+    def rk4_step(self, t, y, dt, phys_parameter, time_deriv_funcs):
+        # Get the k1, k2, k3, k4 slopes
+        k1 = dt* self.system(t, y, phys_parameter, time_deriv_funcs)
+        k2 = dt* self.system(t + dt/2, y + k1/2, phys_parameter, time_deriv_funcs)
+        k3 = dt* self.system(t + dt/2, y + k2/2, phys_parameter, time_deriv_funcs)
+        k4 = dt* self.system(t + dt, y + k3, phys_parameter, time_deriv_funcs)
+        
+        # Update the solution using the weighted average
+        return y + (k1 + 2*k2 + 2*k3 + k4) / 6
+    
+    # Plotting complex representation function with parameters
+    def ProbDensMap(self, probdensmap_mode, x, y, solution):
+        X, Y = np.meshgrid(x, y)
+        if probdensmap_mode=='2D':
+            a, b, c, d, e, f = solution
+            ProbDens = np.exp(a + b*X + c*Y + d*X**2 + e*Y**2 + f*X*Y)
+        elif probdensmap_mode=='4D':
+            a, b, c, d, e, f, h, k, l, o, p, q, r, s, w = solution
+            A = d + q * X + r * Y
+            B = e + s * X + w * Y
+            H = l - p**2/4/k
+            U = B - A*p/2/k
+            Prob0 = np.exp(f*X**2 + o*X*Y + b*X + h*Y**2 + c*Y + a)
+            Prob_var = np.pi/ (np.abs(k)*np.abs(l-p**2/4/k))**0.5 *np.exp(-U**2/4/H)*np.exp(-A**2/4/k)
+            ProbDens = Prob0 * Prob_var
+        
+        return ProbDens
+
     
     def expectation_value(self, Exp_Func, t, realornot):
         X, Y = np.meshgrid(self.x, self.y)
@@ -123,7 +154,7 @@ class FokkerPlanckSimulator:
         elif t_idx>=len(self.solution):
             t_idx = len(self.solution) - 1
         
-        ProbDens = self.ProbDensMap(self.x, self.y, self.solution[t_idx]) 
+        ProbDens = self.ProbDensMap(self.probdensmap_mode, self.x, self.y, self.solution[t_idx]) 
 
         if realornot:
             return self.volume_integration(self.x, self.y, ProbDens * Exp_Func(Alpha, Alpha_star)).real
