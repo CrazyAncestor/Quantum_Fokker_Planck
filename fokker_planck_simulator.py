@@ -196,7 +196,7 @@ class FokkerPlanckSimulator:
         # 設定圖標標題與軸標籤
         plt.title('Electric Field vs Time', fontsize=14)
         plt.xlabel('Time', fontsize=12)
-        plt.ylabel('Electric Field Expectation Value', fontsize=12)
+        plt.ylabel('Electric Field Value', fontsize=12)
 
         # 顯示圖例
         plt.legend()

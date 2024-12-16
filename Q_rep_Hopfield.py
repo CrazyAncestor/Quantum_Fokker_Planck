@@ -100,7 +100,7 @@ representation = 'Q'
 SymSolver = SymbolicSolver()
 gamma_sym, eta_sym, nu_sym, omega_sym, n_th_sym, m_th_sym, g_sym, Dia_sym = sp.symbols('gamma_sym eta_sym nu_sym omega_sym n_th_sym m_th_sym g_sym Dia_sym')
 
-def Hopfield_QREP(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv):
+def Hopfield_QREP_FKEQ(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv):
     TD1 = (gamma_sym + eta_sym) + (gamma_sym/2 * x - nu_sym * y) * Px + (gamma_sym/2 * y + (nu_sym + Dia_sym * 4) * x + 2* g_sym * u) * Py
     TD2 = (eta_sym/2 * u - (omega_sym + Dia_sym * 2) * v ) * Pu + (eta_sym/2 * v + (omega_sym + Dia_sym * 2) * u + 2* g_sym * x) * Pv
     TD3 = gamma_sym * (n_th_sym+1) / 4 * (Pxx + Pyy) + eta_sym * (m_th_sym+1) / 4 * (Puu + Pvv)
@@ -116,7 +116,7 @@ ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*u_sym + e*v_sym + f*x_sym**2 + h*y_s
 probdensmap_mode = '4D'
 
 # Solve the symbolic formula of the time derivatives of the evolving parameters
-time_deriv_funcs = solve_time_deriv_sym(SymSolver, Hopfield_QREP, ProbFunc)
+time_deriv_funcs = solve_time_deriv_sym(SymSolver, Hopfield_QREP_FKEQ, ProbFunc)
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system_time_evolution, time_deriv_funcs)

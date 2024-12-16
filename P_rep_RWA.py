@@ -99,7 +99,7 @@ representation = 'P'
 SymSolver = SymbolicSolver()
 gamma_sym, eta_sym, nu_sym, omega_sym, n_th_sym, m_th_sym, g_sym = sp.symbols('gamma_sym eta_sym nu_sym omega_sym n_th_sym m_th_sym g_sym')
 
-def RWA_PREP(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv):
+def RWA_PREP_FKEQ(x,y,u,v,Px,Py,Pu,Pv,Pxx,Pyy,Puu,Pvv,Pxy,Puv,Pxu,Pyu,Pxv,Pyv):
     TD1 = (gamma_sym + eta_sym) + (gamma_sym/2 * x - nu_sym * y - g_sym * v) * Px + (gamma_sym/2 * y + (nu_sym) * x + g_sym * u) * Py
     TD2 = (eta_sym/2 * u - (omega_sym) * v - g_sym *y) * Pu + (eta_sym/2 * v + (omega_sym) * u + g_sym * x) * Pv
     TD3 = gamma_sym * (n_th_sym) / 4 * (Pxx + Pyy) + eta_sym * (m_th_sym) / 4 * (Puu + Pvv)
@@ -114,7 +114,7 @@ ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*u_sym + e*v_sym + f*x_sym**2 + h*y_s
 probdensmap_mode = '4D'
 
 # Solve the symbolic formula of the time derivatives of the evolving parameters
-time_deriv_funcs = solve_time_deriv_sym(SymSolver, RWA_PREP, ProbFunc)
+time_deriv_funcs = solve_time_deriv_sym(SymSolver, RWA_PREP_FKEQ, ProbFunc)
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system_time_evolution, time_deriv_funcs)

@@ -81,10 +81,10 @@ representation = 'Q'
 SymSolver = SymbolicSolver()
 gamma_sym, nu_sym, n_th_sym = sp.symbols('gamma_sym nu_sym n_th_sym')
 
-def Photon_QREP(x,y,Px,Py,Pxx,Pyy,Pxy):
-    PT1 = gamma_sym + (gamma_sym / 2 * x - nu_sym * y) * Px + (gamma_sym / 2 * y + nu_sym * x) * Py
-    PT2 = gamma_sym * (n_th_sym+1) / 4 * (Pxx + Pyy)
-    return PT1 + PT2
+def Photon_QREP_FKEQ(x,y,Px,Py,Pxx,Pyy,Pxy):
+    TD1 = gamma_sym + (gamma_sym / 2 * x - nu_sym * y) * Px + (gamma_sym / 2 * y + nu_sym * x) * Py
+    TD2 = gamma_sym * (n_th_sym+1) / 4 * (Pxx + Pyy)
+    return TD1 + TD2
 
 x_sym, y_sym, a, b, c, d, e, f = sp.symbols('x_sym y_sym a b c d e f')
 
@@ -95,7 +95,7 @@ ProbFunc = sp.exp(a + b*x_sym + c*y_sym + d*x_sym**2 + e*y_sym**2 + f*x_sym*y_sy
 probdensmap_mode = '2D'
 
 # Solve the symbolic formula of the time derivatives of the evolving parameters
-time_deriv_funcs = solve_time_deriv_sym(SymSolver, Photon_QREP, ProbFunc)
+time_deriv_funcs = solve_time_deriv_sym(SymSolver, Photon_QREP_FKEQ, ProbFunc)
 
 # Instantiate and run the simulation
 simulator = FokkerPlanckSimulator(representation, simulation_time_setting, simulation_grid_setting, phys_parameter, init_cond, output_dir, probdensmap_mode, system_time_evolution, time_deriv_funcs)
